@@ -41,9 +41,10 @@ struct TaskDetailView: View {
                                 Image(systemName: "minus")
                                     .font(.title3.weight(.semibold))
                                     .frame(maxWidth: .infinity)
-                                    .padding(.vertical, 12)
+                                    .frame(height: 44)
                             }
                             .buttonStyle(.bordered)
+                            .frame(maxWidth: .infinity)
                             .disabled(task.currentCount <= 0)
                             .accessibilityLabel("Decrease count")
 
@@ -53,9 +54,10 @@ struct TaskDetailView: View {
                                 Image(systemName: "plus")
                                     .font(.title3.weight(.semibold))
                                     .frame(maxWidth: .infinity)
-                                    .padding(.vertical, 12)
+                                    .frame(height: 44)
                             }
                             .buttonStyle(.borderedProminent)
+                            .frame(maxWidth: .infinity)
                             .accessibilityLabel("Increase count")
                         }
                     }
@@ -138,3 +140,26 @@ struct TaskDetailView: View {
         }
     }
 }
+
+#Preview {
+    let previewStore = TaskStore(
+        tasks: [
+            CountsTask(
+                id: UUID(uuidString: "00000000-0000-0000-0000-000000000001")!,
+                title: "Push-ups",
+                frequencyPerDay: 50,
+                description: "Spread sets across the day.",
+                currentCount: 12
+            )
+        ]
+    )
+
+    return NavigationStack {
+        TaskDetailView(
+            taskID: previewStore.tasks[0].id,
+            store: previewStore
+        )
+    }
+}
+
+
