@@ -1,0 +1,20 @@
+# Xcode user/state
+xcuserdata/
+*.xcuserstate
+
+# Build outputs
+DerivedData/
+build/
+*.ipa
+*.dSYM
+
+# Swift Package Manager artifacts (if used later)
+.build/
+.swiftpm/
+
+# macOS noise
+.DS_Store
+
+# Tooling
+.idea/
+*.swp
