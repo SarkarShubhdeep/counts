@@ -10,6 +10,7 @@ struct TaskDetailView: View {
     @ObservedObject var store: TaskStore
 
     @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject private var settings: AppSettings
 
     @State private var isEditing = false
     @State private var showDeleteConfirm = false
@@ -24,10 +25,14 @@ struct TaskDetailView: View {
                 Form {
                     Section {
                         VStack(alignment: .leading, spacing: 8) {
-                            Text("\(task.currentCount) / \(task.frequencyPerDay)")
+                            Text(task.progressSummary(mode: settings.progressDisplayMode))
                                 .font(.title2.weight(.semibold))
                                 .monospacedDigit()
-                            Text("\(task.progressPercentage)% complete")
+                            Text(
+                                settings.progressDisplayMode == .fraction
+                                ? "\(task.progressPercentage)% complete"
+                                : "\(task.currentCount) / \(task.frequencyPerDay)"
+                            )
                                 .font(.subheadline)
                                 .foregroundStyle(.secondary)
                             ProgressView(value: task.progress)
@@ -36,7 +41,7 @@ struct TaskDetailView: View {
 
                         HStack(spacing: 16) {
                             Button {
-                                store.adjustCount(taskID: task.id, by: -1)
+                                store.adjustCount(taskID: task.id, by: -1, settings: settings)
                             } label: {
                                 Image(systemName: "minus")
                                     .font(.title3.weight(.semibold))
@@ -49,7 +54,7 @@ struct TaskDetailView: View {
                             .accessibilityLabel("Decrease count")
 
                             Button {
-                                store.adjustCount(taskID: task.id, by: 1)
+                                store.adjustCount(taskID: task.id, by: 1, settings: settings)
                             } label: {
                                 Image(systemName: "plus")
                                     .font(.title3.weight(.semibold))
@@ -160,6 +165,7 @@ struct TaskDetailView: View {
             store: previewStore
         )
     }
+    .environmentObject(AppSettings())
 }
 
 

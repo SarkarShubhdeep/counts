@@ -8,12 +8,15 @@
 import SwiftUI
 
 struct ContentView: View {
+    @EnvironmentObject private var settings: AppSettings
+    @Environment(\.scenePhase) private var scenePhase
+
     @StateObject private var taskStore = TaskStore()
 
     @State private var selectedDate = Date()
     @State private var calendarDraftDate = Date()
     @State private var isCalendarPresented = false
-    @State private var isArchivedListPresented = false
+    @State private var isSettingsPresented = false
 
     @State private var isAddTaskPresented = false
     @State private var draftTitle = ""
@@ -62,8 +65,8 @@ struct ContentView: View {
                 .navigationBarTitleDisplayMode(.large)
                 .toolbar {
                     ToolbarItem(placement: .topBarLeading) {
-                        Button {
-                            isArchivedListPresented = true
+                        NavigationLink {
+                            ArchivedTasksView(store: taskStore)
                         } label: {
                             Image(systemName: "archivebox")
                         }
@@ -71,18 +74,30 @@ struct ContentView: View {
                         .accessibilityHint("Shows tasks you have archived")
                     }
                     ToolbarItem(placement: .topBarTrailing) {
-                        Button {
-                            calendarDraftDate = selectedDate
-                            isCalendarPresented = true
-                        } label: {
-                            Image(systemName: "calendar")
+                        HStack(spacing: 14) {
+                            Button {
+                                isSettingsPresented = true
+                            } label: {
+                                Image(systemName: "gearshape")
+                            }
+                            .accessibilityLabel("Settings")
+                            .accessibilityHint("Opens app settings")
+
+                            Button {
+                                calendarDraftDate = selectedDate
+                                isCalendarPresented = true
+                            } label: {
+                                Image(systemName: "calendar")
+                            }
+                            .accessibilityLabel("Choose date")
+                            .accessibilityHint("Opens the calendar")
                         }
-                        .accessibilityLabel("Choose date")
-                        .accessibilityHint("Opens the calendar")
                     }
                 }
 
                 Button {
+                    taskStore.applyAutomaticResetIfNeeded(settings: settings)
+                    draftFrequencyPerDay = settings.defaultFrequencyPerDay
                     isAddTaskPresented = true
                 } label: {
                     Image(systemName: "plus")
@@ -91,23 +106,29 @@ struct ContentView: View {
                         .frame(width: 56, height: 56)
                         .background {
                             Circle()
-                                .fill(Color.accentColor)
+                                .fill(settings.accentColorName.color)
                         }
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel("Add task")
                 .shadow(color: .black.opacity(0.2), radius: 6, y: 3)
                 .padding(20)
-                .allowsHitTesting(!isCalendarPresented && !isAddTaskPresented && !isArchivedListPresented)
+                .allowsHitTesting(!isCalendarPresented && !isAddTaskPresented)
             }
             .navigationDestination(for: UUID.self) { taskID in
                 TaskDetailView(taskID: taskID, store: taskStore)
             }
         }
-        .sheet(isPresented: $isArchivedListPresented) {
-            ArchivedTasksView(store: taskStore)
-                .presentationDetents([.medium, .large])
-                .presentationDragIndicator(.visible)
+        .onAppear {
+            taskStore.applyAutomaticResetIfNeeded(settings: settings)
+            if draftTitle.isEmpty {
+                draftFrequencyPerDay = settings.defaultFrequencyPerDay
+            }
+        }
+        .onChange(of: scenePhase) { _, newPhase in
+            if newPhase == .active {
+                taskStore.applyAutomaticResetIfNeeded(settings: settings)
+            }
         }
         .sheet(isPresented: $isCalendarPresented) {
             NavigationStack {
@@ -138,6 +159,11 @@ struct ContentView: View {
             .presentationDetents([.medium, .large])
             .presentationDragIndicator(.visible)
         }
+        .sheet(isPresented: $isSettingsPresented) {
+            SettingsView(settings: settings) {
+                isSettingsPresented = false
+            }
+        }
         .sheet(isPresented: $isAddTaskPresented, onDismiss: resetAddTaskDraft) {
             AddTaskSheet(
                 title: $draftTitle,
@@ -154,7 +180,7 @@ struct ContentView: View {
         VStack(alignment: .leading, spacing: 4) {
             Text(task.title)
                 .font(.headline)
-            Text("\(task.currentCount) / \(task.frequencyPerDay) today")
+            Text(task.progressSummary(mode: settings.progressDisplayMode, includeTodaySuffix: true))
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
                 .monospacedDigit()
@@ -180,7 +206,8 @@ struct ContentView: View {
         taskStore.addTask(
             title: title,
             frequencyPerDay: draftFrequencyPerDay,
-            description: draftDescription.trimmingCharacters(in: .whitespacesAndNewlines)
+            description: draftDescription.trimmingCharacters(in: .whitespacesAndNewlines),
+            settings: settings
         )
         resetAddTaskDraft()
         isAddTaskPresented = false
@@ -188,11 +215,12 @@ struct ContentView: View {
 
     private func resetAddTaskDraft() {
         draftTitle = ""
-        draftFrequencyPerDay = 1
+        draftFrequencyPerDay = settings.defaultFrequencyPerDay
         draftDescription = ""
     }
 }
 
 #Preview {
     ContentView()
+        .environmentObject(AppSettings())
 }

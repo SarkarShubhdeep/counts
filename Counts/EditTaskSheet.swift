@@ -9,6 +9,7 @@ import SwiftUI
 struct EditTaskSheet: View {
     let taskID: UUID
     @ObservedObject var store: TaskStore
+    @EnvironmentObject private var settings: AppSettings
 
     @State private var title: String
     @State private var frequencyPerDay: Int
@@ -72,7 +73,8 @@ struct EditTaskSheet: View {
             id: taskID,
             title: trimmedTitle,
             frequencyPerDay: frequencyPerDay,
-            description: description.trimmingCharacters(in: .whitespacesAndNewlines)
+            description: description.trimmingCharacters(in: .whitespacesAndNewlines),
+            settings: settings
         )
         onSave()
     }

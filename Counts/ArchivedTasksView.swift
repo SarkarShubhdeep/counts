@@ -5,60 +5,52 @@
 
 import SwiftUI
 
-/// Sheet listing archived tasks; supports open detail, unarchive, delete.
+/// Archived task list; supports open detail, unarchive, delete.
 struct ArchivedTasksView: View {
     @ObservedObject var store: TaskStore
-    @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject private var settings: AppSettings
 
     var body: some View {
-        NavigationStack {
-            Group {
-                if store.archivedTasks.isEmpty {
-                    ContentUnavailableView(
-                        "No Archived Tasks",
-                        systemImage: "archivebox",
-                        description: Text("Tasks you archive will appear here.")
-                    )
-                } else {
-                    List {
-                        ForEach(store.archivedTasks) { task in
-                            NavigationLink(value: task.id) {
-                                archivedRow(task)
+        Group {
+            if store.archivedTasks.isEmpty {
+                ContentUnavailableView(
+                    "No Archived Tasks",
+                    systemImage: "archivebox",
+                    description: Text("Tasks you archive will appear here.")
+                )
+            } else {
+                List {
+                    ForEach(store.archivedTasks) { task in
+                        NavigationLink(value: task.id) {
+                            archivedRow(task)
+                        }
+                        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                            Button("Delete", role: .destructive) {
+                                store.deleteTask(id: task.id)
                             }
-                            .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                                Button("Delete", role: .destructive) {
-                                    store.deleteTask(id: task.id)
-                                }
-                                Button("Unarchive") {
-                                    store.unarchiveTask(id: task.id)
-                                }
-                                .tint(.indigo)
+
+                            Button("Unarchive") {
+                                store.unarchiveTask(id: task.id)
                             }
+                            .tint(.indigo)
                         }
                     }
-                    .listStyle(.insetGrouped)
                 }
-            }
-            .navigationTitle("Archived")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Done") {
-                        dismiss()
-                    }
-                }
-            }
-            .navigationDestination(for: UUID.self) { taskID in
-                TaskDetailView(taskID: taskID, store: store)
+                .listStyle(.insetGrouped)
             }
         }
+        .navigationTitle("Archived")
+        .navigationBarTitleDisplayMode(.inline)
+        .navigationDestination(for: UUID.self) { taskID in
+            TaskDetailView(taskID: taskID, store: store)
+        }
     }
-
+    
     private func archivedRow(_ task: CountsTask) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(task.title)
                 .font(.headline)
-            Text("\(task.currentCount) / \(task.frequencyPerDay)")
+            Text(task.progressSummary(mode: settings.progressDisplayMode))
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
                 .monospacedDigit()
@@ -71,4 +63,37 @@ struct ArchivedTasksView: View {
         }
         .padding(.vertical, 4)
     }
+}
+
+#Preview {
+    let previewStore = TaskStore(
+        tasks: [
+            CountsTask(
+                title: "Read pages",
+                frequencyPerDay: 20,
+                description: "Any book or article.",
+                currentCount: 7,
+                isArchived: true
+            ),
+            CountsTask(
+                title: "Water glasses",
+                frequencyPerDay: 8,
+                description: "8 oz each.",
+                currentCount: 5,
+                isArchived: true
+            ),
+            CountsTask(
+                title: "Push-ups",
+                frequencyPerDay: 50,
+                description: "Spread sets across the day.",
+                currentCount: 12,
+                isArchived: false
+            )
+        ]
+    )
+
+    return NavigationStack {
+        ArchivedTasksView(store: previewStore)
+    }
+    .environmentObject(AppSettings())
 }

@@ -45,17 +45,20 @@ final class TaskStore: ObservableObject {
         CountsTask(title: "Sleep by target", frequencyPerDay: 1, description: "Lights out by 11 pm.", currentCount: 0),
     ]
 
-    func addTask(title: String, frequencyPerDay: Int, description: String) {
+    func addTask(title: String, frequencyPerDay: Int, description: String, settings: AppSettings? = nil) {
+        applyAutomaticResetIfNeeded(settings: settings)
         let task = CountsTask(title: title, frequencyPerDay: frequencyPerDay, description: description)
         tasks.insert(task, at: 0)
     }
 
-    func adjustCount(taskID: UUID, by delta: Int) {
+    func adjustCount(taskID: UUID, by delta: Int, settings: AppSettings? = nil) {
+        applyAutomaticResetIfNeeded(settings: settings)
         guard let index = tasks.firstIndex(where: { $0.id == taskID }) else { return }
         tasks[index].currentCount = max(0, tasks[index].currentCount + delta)
     }
 
-    func updateTask(id: UUID, title: String, frequencyPerDay: Int, description: String) {
+    func updateTask(id: UUID, title: String, frequencyPerDay: Int, description: String, settings: AppSettings? = nil) {
+        applyAutomaticResetIfNeeded(settings: settings)
         guard let index = tasks.firstIndex(where: { $0.id == id }) else { return }
         tasks[index].title = title.trimmingCharacters(in: .whitespacesAndNewlines)
         tasks[index].frequencyPerDay = max(1, frequencyPerDay)
@@ -74,5 +77,20 @@ final class TaskStore: ObservableObject {
 
     func deleteTask(id: UUID) {
         tasks.removeAll { $0.id == id }
+    }
+
+    func applyAutomaticResetIfNeeded(settings: AppSettings?, now: Date = Date()) {
+        guard let settings else { return }
+
+        let logicalDay = settings.logicalDayID(for: now)
+        defer { settings.lastResetLogicalDayID = logicalDay }
+
+        guard settings.autoResetEnabled else { return }
+        guard let lastResetLogicalDayID = settings.lastResetLogicalDayID else { return }
+        guard lastResetLogicalDayID != logicalDay else { return }
+
+        for index in tasks.indices where !tasks[index].isArchived {
+            tasks[index].currentCount = 0
+        }
     }
 }
