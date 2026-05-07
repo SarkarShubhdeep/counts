@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import SwiftData
 
 @main
 struct CountsApp: App {
@@ -18,5 +19,6 @@ struct CountsApp: App {
                 .preferredColorScheme(settings.themeMode.colorScheme)
                 .tint(settings.accentColorName.color)
         }
+        .modelContainer(for: [TaskEntity.self])
     }
 }

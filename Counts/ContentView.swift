@@ -6,10 +6,12 @@
 //
 
 import SwiftUI
+import SwiftData
 
 struct ContentView: View {
     @EnvironmentObject private var settings: AppSettings
     @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.modelContext) private var modelContext
 
     @StateObject private var taskStore = TaskStore()
 
@@ -42,7 +44,7 @@ struct ContentView: View {
                     if taskStore.activeTasks.isEmpty {
                         Section {
                             ContentUnavailableView(
-                                "No Tasks Yet",
+                                "No Counts Yet",
                                 systemImage: "checklist",
                                 description: Text("Tap the add button to create a task.")
                             )
@@ -61,6 +63,7 @@ struct ContentView: View {
                 }
                 .listStyle(.insetGrouped)
                 .contentMargins(.top, 20, for: .scrollContent)
+                .contentMargins(.bottom, 96, for: .scrollContent)
                 .navigationTitle(homeHeaderTitle)
                 .navigationBarTitleDisplayMode(.large)
                 .toolbar {
@@ -120,6 +123,7 @@ struct ContentView: View {
             }
         }
         .onAppear {
+            taskStore.configurePersistence(modelContext: modelContext)
             taskStore.applyAutomaticResetIfNeeded(settings: settings)
             if draftTitle.isEmpty {
                 draftFrequencyPerDay = settings.defaultFrequencyPerDay
