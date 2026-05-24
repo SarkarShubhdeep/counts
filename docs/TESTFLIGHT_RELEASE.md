@@ -151,11 +151,26 @@ git push origin testflight/1.0-1
 
 ## Phase 4 — Upload a build from Xcode
 
+### Archive vs Xcode Cloud (important)
+
+| | **Product → Archive** (use this) | **Xcode Cloud “Start Build”** |
+|--|----------------------------------|--------------------------------|
+| Builds on | Your Mac | Apple’s servers |
+| Needs GitHub scheme in repo | No | **Yes** — shared `Counts.xcscheme` committed |
+| Best for first TestFlight | **Recommended** | Optional; more setup |
+
+If you see **“Counts is now configured for Xcode Cloud”** with a **Start Build** button, that is **not** the same as Archive. For this guide:
+
+1. Click **Close** on that dialog (you can use Xcode Cloud later).
+2. Use **Product → Archive** below.
+
+Xcode Cloud often appears to “do nothing” when the **Counts** scheme was only on your Mac (`xcuserdata/`, gitignored) and not in GitHub. A shared scheme is now at `Counts.xcodeproj/xcshareddata/xcschemes/Counts.xcscheme` if you want Cloud later.
+
 ### 4.1 Archive
 
 1. Connect iPhone or select **Any iOS Device (arm64)** in the device menu
-2. **Product → Archive**
-3. Wait for Organizer to open with the new archive
+2. **Product → Archive** (not **Integrate → Xcode Cloud → Start Build**)
+3. Wait for **Organizer** to open with the new archive
 
 If Archive is greyed out, select a real device or “Any iOS Device”, not a simulator.
 
