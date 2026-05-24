@@ -77,4 +77,40 @@ final class SwiftDataTaskRepository: TaskRepository {
         )
         return try context.fetch(descriptor).first
     }
+    
+    func recordDailyProgress(taskID: UUID, count: Int, goal: Int, date: Date) throws {
+        let normalizedDate = DailyRecordEntity.normalizeDate(date)
+        
+        let descriptor = FetchDescriptor<DailyRecordEntity>(
+            predicate: #Predicate { $0.taskID == taskID && $0.date == normalizedDate }
+        )
+        
+        if let existing = try context.fetch(descriptor).first {
+            existing.count = max(0, count)
+            existing.goal = max(1, goal)
+        } else {
+            let record = DailyRecordEntity(taskID: taskID, date: date, count: count, goal: goal)
+            context.insert(record)
+        }
+        try context.save()
+    }
+    
+    func fetchDailyRecords(taskID: UUID, lastDays: Int) throws -> [Date: (count: Int, goal: Int)] {
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: Date())
+        guard let startDate = calendar.date(byAdding: .day, value: -(lastDays - 1), to: today) else {
+            return [:]
+        }
+        
+        let descriptor = FetchDescriptor<DailyRecordEntity>(
+            predicate: #Predicate { $0.taskID == taskID && $0.date >= startDate }
+        )
+        
+        let records = try context.fetch(descriptor)
+        var result: [Date: (count: Int, goal: Int)] = [:]
+        for record in records {
+            result[record.date] = (count: record.count, goal: record.goal)
+        }
+        return result
+    }
 }

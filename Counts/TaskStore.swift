@@ -58,6 +58,7 @@ final class TaskStore: ObservableObject {
             do {
                 try repository.adjustCount(taskID: taskID, by: delta)
                 reloadFromRepository()
+                updateDailyRecordIfNeeded(taskID: taskID)
             } catch {
                 recordError(error)
             }
@@ -66,6 +67,32 @@ final class TaskStore: ObservableObject {
 
         guard let index = tasks.firstIndex(where: { $0.id == taskID }) else { return }
         tasks[index].currentCount = max(0, tasks[index].currentCount + delta)
+    }
+    
+    func fetchDailyRecords(taskID: UUID, lastDays: Int = 100) -> [Date: (count: Int, goal: Int)] {
+        guard let repository else { return [:] }
+        do {
+            return try repository.fetchDailyRecords(taskID: taskID, lastDays: lastDays)
+        } catch {
+            recordError(error)
+            return [:]
+        }
+    }
+    
+    private func updateDailyRecordIfNeeded(taskID: UUID) {
+        guard let repository else { return }
+        guard let task = tasks.first(where: { $0.id == taskID }) else { return }
+        
+        do {
+            try repository.recordDailyProgress(
+                taskID: taskID,
+                count: task.currentCount,
+                goal: task.frequencyPerDay,
+                date: Date()
+            )
+        } catch {
+            recordError(error)
+        }
     }
 
     func updateTask(id: UUID, title: String, frequencyPerDay: Int, description: String, settings: AppSettings? = nil) {

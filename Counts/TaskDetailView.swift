@@ -83,6 +83,10 @@ struct TaskDetailView: View {
                                 .foregroundStyle(.secondary)
                         }
                     }
+                    
+                    Section("Last 100 Days") {
+                        ActivityGrid(taskID: task.id, store: store)
+                    }
                 }
                 .navigationTitle(task.title)
                 .navigationBarTitleDisplayMode(.inline)
@@ -105,7 +109,7 @@ struct TaskDetailView: View {
                                 }
                             }
 
-                            Divider()
+
 
                             Button("Delete Task", role: .destructive) {
                                 showDeleteConfirm = true
